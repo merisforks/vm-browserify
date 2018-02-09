@@ -1,7 +1,11 @@
 var indexOf = require('indexof');
 
 // cached iFrame instance, re-use for each runInContext Call.
-var iFrame = null;
+var cache = {
+  'iFrame': null,
+  'context': {},
+  'cKeys': []
+};
 
 var Object_keys = function (obj) {
     if (Object.keys) return Object.keys(obj)
@@ -48,16 +52,25 @@ Context.prototype = {};
 
 var Script = exports.Script = function NodeScript (code) {
     if (!(this instanceof Script)) return new Script(code);
-    if(!iFrame) {
-      iFrame = document.createElement('iframe');
-      if (!iFrame.style) iFrame.style = {};
-      iFrame.style.display = 'none';
-      iFrame.setAttribute('sandbox', 'allow-same-origin');
-      
-      document.body.appendChild(iFrame);
+    if(!cache.iFrame) {
+      cache.iFrame = document.createElement('iframe');
+      if (!cache.iFrame.style) cache.iFrame.style = {};
+      cache.iFrame.style.display = 'none';
+      cache.iFrame.setAttribute('sandbox', 'allow-same-origin');
+
+      document.body.appendChild(cache.iFrame);
     }
+
+    // Always mix in the context keys
+    // Something is erasing when a Blaze removes DOM elements
+    // e.g. during a MERIS event
+    var win = cache.iFrame.contentWindow;
+    forEach(cache.cKeys, function (key) {
+      win[key] = cache.context[key];
+    });
+
     this.code = code;
-    this.iFrame = iFrame;
+    this.iFrame = cache.iFrame;
 };
 
 Script.prototype.runInContext = function (context) {
@@ -66,16 +79,12 @@ Script.prototype.runInContext = function (context) {
     }
     var win = this.iFrame.contentWindow;
     var winOriginal = Object_keys(win);
-    let originalToRestore = [];
+    let originalToRestore = {};
     var wEval = win.eval, wExecScript = win.execScript;
 
     forEach(Object_keys(context), function (key) {
       if(win[key] !== undefined) {
-        let restore = {
-          'key': key,
-          'value': win[key]
-        };
-        originalToRestore.push(restore);
+        originalToRestore[key] = win[key];
       }
       win[key] = context[key];
     });
@@ -104,8 +113,8 @@ Script.prototype.runInContext = function (context) {
     });
 
     // restore context to original field values
-    forEach(originalToRestore, function (orig) {
-      win[orig.key] = orig.value;
+    forEach(Object_keys(originalToRestore), function (key) {
+      win[key] = originalToRestore[key];
     });
 
     return res;
@@ -148,18 +157,7 @@ exports.createContext = Script.createContext = function (context) {
 };
 
 exports.importContext = function (context) {
-  // make sure iFrame is initialized
-  Script('');
   // add context to the iFrame context
-  var win = iFrame.contentWindow;
-  forEach(Object_keys(context), function (key) {
-    // if(win[key] !== undefined) {
-    //   let restore = {
-    //     'key': key,
-    //     'value': win[key]
-    //   };
-    //   originalToRestore.push(restore);
-    // }
-    win[key] = context[key];
-  });
+  cache.context = Object.assign({}, cache.context, context);
+  cache.cKeys = Object.keys(cache.context);
 };
