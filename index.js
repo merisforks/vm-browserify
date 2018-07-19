@@ -1,10 +1,32 @@
 var indexOf = require('indexof');
 
+var unnecessary = ["postMessage","blur","focus","close","frames","self","window","parent","opener","top",
+"length","closed","location","document","origin","name","history","locationbar","menubar","personalbar",
+"scrollbars","statusbar","toolbar","status","frameElement","navigator","customElements","external","screen","innerWidth",
+"innerHeight","scrollX","pageXOffset","scrollY","pageYOffset","screenX","screenY","outerWidth","outerHeight","devicePixelRatio",
+"clientInformation","screenLeft","screenTop","defaultStatus","defaultstatus","styleMedia","onanimationend","onanimationiteration","onanimationstart","onsearch",
+"ontransitionend","onwebkitanimationend","onwebkitanimationiteration","onwebkitanimationstart","onwebkittransitionend","isSecureContext","onabort","onblur","oncancel","oncanplay",
+"oncanplaythrough","onchange","onclick","onclose","oncontextmenu","oncuechange","ondblclick","ondrag","ondragend","ondragenter",
+"ondragleave","ondragover","ondragstart","ondrop","ondurationchange","onemptied","onended","onerror","onfocus","oninput",
+"oninvalid","onkeydown","onkeypress","onkeyup","onload","onloadeddata","onloadedmetadata","onloadstart","onmousedown","onmouseenter",
+"onmouseleave","onmousemove","onmouseout","onmouseover","onmouseup","onmousewheel","onpause","onplay","onplaying","onprogress",
+"onratechange","onreset","onresize","onscroll","onseeked","onseeking","onselect","onstalled","onsubmit","onsuspend",
+"ontimeupdate","ontoggle","onvolumechange","onwaiting","onwheel","onauxclick","ongotpointercapture","onlostpointercapture","onpointerdown","onpointermove",
+"onpointerup","onpointercancel","onpointerover","onpointerout","onpointerenter","onpointerleave","onafterprint","onbeforeprint","onbeforeunload","onhashchange",
+"onlanguagechange","onmessage","onmessageerror","onoffline","ononline","onpagehide","onpageshow","onpopstate","onrejectionhandled","onstorage",
+"onunhandledrejection","onunload","performance","stop","open","alert","confirm","prompt","print","requestAnimationFrame",
+"cancelAnimationFrame","requestIdleCallback","cancelIdleCallback","captureEvents","releaseEvents","getComputedStyle","matchMedia","moveTo","moveBy","resizeTo",
+"resizeBy","getSelection","find","webkitRequestAnimationFrame","webkitCancelAnimationFrame","fetch","btoa","atob","setTimeout","clearTimeout",
+"setInterval","clearInterval","createImageBitmap","scroll","scrollTo","scrollBy","onappinstalled","onbeforeinstallprompt","crypto","ondevicemotion",
+"ondeviceorientation","ondeviceorientationabsolute","indexedDB","webkitStorageInfo","sessionStorage","localStorage","chrome","visualViewport","speechSynthesis","webkitRequestFileSystem",
+"webkitResolveLocalFileSystemURL","openDatabase","applicationCache","caches"]
+
 // cached iFrame instance, re-use for each runInContext Call.
 var cache = {
   'iFrame': null,
   'context': {},
-  'cKeys': []
+  'cKeys': [],
+  'winOriginal': []
 };
 
 var Object_keys = function (obj) {
@@ -59,18 +81,25 @@ var Script = exports.Script = function NodeScript (code) {
       cache.iFrame.setAttribute('sandbox', 'allow-same-origin');
 
       document.body.appendChild(cache.iFrame);
-    }
+      var w = cache.iFrame.contentWindow;
+      // delete all unnecessary keys in the window
+      forEach(unnecessary, function (key) {
+        delete w[key];
+      });
+      cache.winOriginal = Object_keys(w);
 
-    // Always mix in the context keys
-    // Something is erasing when a Blaze removes DOM elements
-    // e.g. during a MERIS event
+    // mix in the context keys
     var win = cache.iFrame.contentWindow;
     forEach(cache.cKeys, function (key) {
       win[key] = cache.context[key];
+      if(indexOf(cache.winOriginal, key) === -1) cache.winOriginal.push(key);
     });
+    }
+
 
     this.code = code;
     this.iFrame = cache.iFrame;
+    this.winOriginal = cache.winOriginal;
 };
 
 Script.prototype.runInContext = function (context) {
@@ -78,7 +107,7 @@ Script.prototype.runInContext = function (context) {
         throw new TypeError("needs a 'context' argument.");
     }
     var win = this.iFrame.contentWindow;
-    var winOriginal = Object_keys(win);
+    var winOriginal = this.winOriginal;
     let originalToRestore = {};
     var wEval = win.eval, wExecScript = win.execScript;
 
@@ -99,7 +128,7 @@ Script.prototype.runInContext = function (context) {
     var winKeys = Object_keys(win);
 
     var res = wEval.call(win, this.code);
-    
+
     forEach(Object_keys(win), function (key) {
         // Avoid copying circular objects like `top` and `window` by only
         // updating existing context properties or new properties in the `win`
