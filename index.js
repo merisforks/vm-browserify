@@ -188,5 +188,15 @@ exports.createContext = Script.createContext = function (context) {
 exports.importContext = function (context) {
   // add context to the iFrame context
   cache.context = Object.assign({}, cache.context, context);
-  cache.cKeys = Object.keys(cache.context);
+  cache.cKeys = Object_keys(cache.context);
+  // if this is a context that is bound after the cache has been created
+  // then update the execution window with the new context
+  // and update the winOriginal cache
+  var win = cache.iFrame && cache.iFrame.contentWindow;
+  if(win) {
+    forEach(Object_keys(context), function (key) {
+      win[key] = cache.context[key];
+      if(indexOf(cache.winOriginal, key) === -1) cache.winOriginal.push(key);
+    });
+  }
 };
