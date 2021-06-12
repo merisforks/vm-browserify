@@ -17,7 +17,7 @@ var unnecessary = ["postMessage","blur","focus","close","frames","self","window"
 "onunhandledrejection","onunload","performance","stop","open","alert","confirm","prompt","print","requestAnimationFrame",
 "cancelAnimationFrame","requestIdleCallback","cancelIdleCallback","captureEvents","releaseEvents","getComputedStyle","matchMedia","moveTo","moveBy","resizeTo",
 "resizeBy","getSelection","find","webkitRequestAnimationFrame","webkitCancelAnimationFrame","fetch","btoa","atob","setTimeout","clearTimeout",
-"setInterval","clearInterval","createImageBitmap","scroll","scrollTo","scrollBy","onappinstalled","onbeforeinstallprompt","crypto","ondevicemotion",
+"setInterval","clearInterval","createImageBitmap","scroll","scrollTo","scrollBy","onappinstalled","onbeforeinstallprompt","ondevicemotion",
 "ondeviceorientation","ondeviceorientationabsolute","indexedDB","webkitStorageInfo","sessionStorage","localStorage","chrome","visualViewport","speechSynthesis","webkitRequestFileSystem",
 "webkitResolveLocalFileSystemURL","openDatabase","applicationCache","caches"]
 
