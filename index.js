@@ -1,5 +1,3 @@
-var indexOf = require('indexof');
-
 var unnecessary = ["postMessage","blur","focus","close","frames","self","window","parent","opener","top",
 "length","closed","location","document","origin","name","history","locationbar","menubar","personalbar",
 "scrollbars","statusbar","toolbar","status","frameElement","navigator","customElements","external","screen","innerWidth",
@@ -92,7 +90,7 @@ var Script = exports.Script = function NodeScript (code) {
     var win = cache.iFrame.contentWindow;
     forEach(cache.cKeys, function (key) {
       win[key] = cache.context[key];
-      if(indexOf(cache.winOriginal, key) === -1) cache.winOriginal.push(key);
+      if(cache.winOriginal.indexOf(key) === -1) cache.winOriginal.push(key);
     });
     }
 
@@ -133,12 +131,12 @@ Script.prototype.runInContext = function (context) {
         // Avoid copying circular objects like `top` and `window` by only
         // updating existing context properties or new properties in the `win`
         // that was only introduced after the eval.
-        if (key in context || indexOf(winKeys, key) === -1) {
-            if (indexOf(globals, key) === -1) context[key] = win[key];
+        if (key in context || winKeys.indexOf(key) === -1) {
+            if (globals.indexOf(key) === -1) context[key] = win[key];
             else defineProp(context, key, win[key]);
         }
         // delete win context of extra fields
-        if (indexOf(winOriginal, key) === -1) delete win[key];
+        if (winOriginal.indexOf(key) === -1) delete win[key];
     });
 
     // restore context to original field values
@@ -196,7 +194,7 @@ exports.importContext = function (context) {
   if(win) {
     forEach(Object_keys(context), function (key) {
       win[key] = cache.context[key];
-      if(indexOf(cache.winOriginal, key) === -1) cache.winOriginal.push(key);
+      if(cache.winOriginal.indexOf(key) === -1) cache.winOriginal.push(key);
     });
   }
 };
