@@ -76,7 +76,7 @@ var Script = exports.Script = function NodeScript (code) {
       cache.iFrame = document.createElement('iframe');
       if (!cache.iFrame.style) cache.iFrame.style = {};
       cache.iFrame.style.display = 'none';
-      cache.iFrame.setAttribute('sandbox', 'allow-same-origin');
+      cache.iFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts');
 
       document.body.appendChild(cache.iFrame);
       var w = cache.iFrame.contentWindow;
